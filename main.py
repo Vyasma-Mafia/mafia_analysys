@@ -81,28 +81,6 @@ class GameState:
                                               self.unrevealed_mafia_count, self.revealed_mafia_count,
                                               self.has_sheriff, self.sheriff_revealed, Phase.VOTE)
                         next_states.append((new_state, Fraction(1), "Мафия стреляет в мирного"))
-            else:  # Мафия стреляет в случайную немафию
-                total_town_count = self.unrevealed_town_count + 1 + self.revealed_town_count
-                if self.has_sheriff:
-                    new_state = GameState(self.unrevealed_town_count, self.revealed_town_count,
-                                          self.unrevealed_mafia_count, self.revealed_mafia_count, False,
-                                          True, Phase.VOTE)
-                    next_states.append(
-                        (new_state, Fraction(1, total_town_count),
-                         "Мафия стреляет в шерифа"))
-                if self.unrevealed_town_count > 0:
-                    new_state = GameState(self.unrevealed_town_count - 1, self.revealed_town_count,
-                                          self.unrevealed_mafia_count, self.revealed_mafia_count, self.has_sheriff,
-                                          self.sheriff_revealed, Phase.VOTE)
-                    next_states.append((
-                        new_state, Fraction(self.unrevealed_town_count, total_town_count),
-                        "Мафия стреляет в мирного"))
-                if self.revealed_town_count > 0:
-                    new_state = GameState(self.unrevealed_town_count, self.revealed_town_count - 1,
-                                          self.unrevealed_mafia_count, self.revealed_mafia_count,
-                                          self.has_sheriff, self.sheriff_revealed, Phase.VOTE)
-                    next_states.append((new_state, Fraction(self.revealed_town_count, total_town_count),
-                                        "Мафия стреляет в проверенного мирного"))
 
         elif self.phase == Phase.VOTE:
             if self.sheriff_revealed:
@@ -183,8 +161,11 @@ def get_win_probability(state: GameState) -> Fraction:
     #     state.has_sheriff, state.sheriff_revealed, state.phase)
     # if state_tuple in cache:
     #     return cache[state_tuple]
-
     next_states = state.get_next_states()
+    print(state)
+    if state.phase == Phase.NIGHT:
+        return min([get_win_probability(next_state) for next_state, prob, _ in
+             filter(lambda it: it[1] != 0, next_states)])
     probs = [prob * get_win_probability(next_state) for next_state, prob, _ in
              filter(lambda it: it[1] != 0, next_states)]
     win_prob = Fraction(0)
@@ -238,4 +219,4 @@ counter = 0
 graph = yed.Graph()
 create_node(initial_state, graph)
 os.remove("temp.graphml")
-graph.persist_graph("temp.graphml", pretty_print=True)
+graph.persist_graph("temp.graphml")
